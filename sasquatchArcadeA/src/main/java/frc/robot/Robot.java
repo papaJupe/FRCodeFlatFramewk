@@ -1,4 +1,5 @@
 // sasquatchArcadeA : arcade drive w/ 4 Neo on CA drive, flat framework
+//  drives only, no Auto, edited AM 221204 from REV example Motor_Follow
 
 // Copyright (c) FIRST and other WPILib contributors.
 // Open Source; you can modify and/or share it under the terms of
@@ -15,7 +16,7 @@ import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
 /**
  * .. shows the use of the DifferentialDrive class. Runs the
- * motors with split arcade steering and an Xbox controller.
+ * motors with split arcade steering and Xbox controller.
  */
 public class Robot extends TimedRobot {
   // declare local instance vars for hardware, base drive class
@@ -38,9 +39,9 @@ public class Robot extends TimedRobot {
 
   @Override
   public void robotInit() {
-    // instance motor, joystick, drive objects
-    /*
-     * This initializes two brushless Masters (Neos) with CAN IDs __
+
+    /* instance motor, joystick, drive objects
+     * This initializes two brushless Masters (Neos) with CAN IDs
      * and 2 Slave followers (Neos). Change IDs for your setup.
      */
     my_leftMaster = new CANSparkMax(leftMasterID, MotorType.kBrushless);
@@ -58,11 +59,11 @@ public class Robot extends TimedRobot {
     my_rightMaster.restoreFactoryDefaults();
     my_rightSlave.restoreFactoryDefaults();
 
-    // invert R side ? example says:
+    // invert R side?, example says:
     // We need to invert one side of the drivetrain so that positive voltages
     // result in both sides moving forward. Depending on how your robot's
     // gearbox is constructed, you might have to invert the left side instead.
-    // Diff Drive methods claim to invert R side without doing this:
+    // but: Diff. Drive methods claim to invert R side without doing this:
 
     // my_leftMaster.setInverted(false);
     // my_rightMaster.setInverted(true);
@@ -75,15 +76,15 @@ public class Robot extends TimedRobot {
 
     my_driveJoy = new XboxController(0);
 
-  }
+  }  // end robotInit
 
   @Override
   public void teleopPeriodic() {
     // Drive with split arcade drive.
-    // That means that the Y axis of the left stick powers forward
+    // i.e. the Y axis of the left stick powers forward
     // and backward, and the X of the right stick turns left and right.
     // drive class has default deadband 0.02, change with .setDeadband(dbl)
     my_DiffDrive.arcadeDrive(-my_driveJoy.getLeftY() * 0.6, my_driveJoy.getRightX() * 0.3);
 
-  }
+  }  // end teleopPeriodic
 }

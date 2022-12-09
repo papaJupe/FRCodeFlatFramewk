@@ -27,18 +27,16 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 /**
  * The VM is configured to automatically run this class, and to call the
  * functions corresponding to each mode, as described in the TimedRobot
- * documentation. [If you change the name of this class or the package] <--
- * just don't.
+ * documentation. 
  */
 public class Robot extends TimedRobot {
-  /**
-   * inits run when the robot is started
-   */
+  // inits run when the robot is started
 
   // actuators
   private WPI_TalonSRX leftMaster = new WPI_TalonSRX(4);
-  private WPI_TalonSRX rightMaster = new WPI_TalonSRX(2);
   private WPI_TalonSRX leftSlave = new WPI_TalonSRX(3);
+    
+  private WPI_TalonSRX rightMaster = new WPI_TalonSRX(2);
   private WPI_TalonSRX rightSlave = new WPI_TalonSRX(1);
 
   // private WPI_TalonSRX/ armMotor = new WPI_TalonSRX(5);
@@ -51,6 +49,8 @@ public class Robot extends TimedRobot {
   // DoubleSolenoid(PneumaticsModuleType.CTREPCM,
   // 0, 1); // PCM port 0, 1
 
+	// drive mode class instanced using above motor instance
+	// -- gives you arcadeDrive() et al methods
   private DifferentialDrive drive = new DifferentialDrive(leftMaster, rightMaster);
 
   // joysticks
@@ -63,19 +63,8 @@ public class Robot extends TimedRobot {
   // 60 * 18 / 84;
 
   @Override
-  public void robotPeriodic() {
-    // SmartDashboard.putNumber("Arm Encoder Value",//
-    // armMotor.getSelectedSensorPosition() * kArmTick2Deg);
-
-    SmartDashboard.putNumber("Left Drive Encoder",
-        leftMaster.getSelectedSensorPosition() * kDriveTick2Feet);
-    SmartDashboard.putNumber("Right Drive Encoder",
-        rightMaster.getSelectedSensorPosition() * kDriveTick2Feet);
-  }
-
-  @Override
   public void robotInit() {
-    // inverted settings suspect one or other should be false
+    // inverted settings usually one or other should be false
     leftMaster.setInverted(false);
     rightMaster.setInverted(true);
     // armMotor.setInverted(false);
@@ -84,12 +73,13 @@ public class Robot extends TimedRobot {
     leftSlave.follow(leftMaster);
     rightSlave.follow(rightMaster);
     // armSlave.follow//(armMotor);
+    
     // should follow, so maybe not needed?
     leftSlave.setInverted(InvertType.FollowMaster);
     rightSlave.setInverted(InvertType.FollowMaster);
     // armSlave.setInverted(InvertType.FollowMaster);
 
-    // init encoders
+    // init encoders integral in TalonSRX
     leftMaster.configSelectedFeedbackSensor(FeedbackDevice.QuadEncoder,
      0, 20);
     rightMaster.configSelectedFeedbackSensor(FeedbackDevice.QuadEncoder,
@@ -100,7 +90,7 @@ public class Robot extends TimedRobot {
      * Sets the phase of the sensor. Use when controller forward/reverse output
      * doesn't correlate to appropriate forward/reverse reading of sensor.
      * Pick a value so that positive PercentOutput yields a positive change in
-     * sensor.
+     * sensor. Should follow controller invert setting, so may not need
      * After setting this, user can freely call SetInverted() with any value.
      */
     leftMaster.setSensorPhase(false);
@@ -119,13 +109,23 @@ public class Robot extends TimedRobot {
     // armMotor.configForwardSoftLimitEnable(true, 10);
     // start compressor, automatic now
     // compressor.start();
-
-    leftMaster.configOpenloopRamp(1.0, 10);
-    rightMaster.configOpenloopRamp(1.0, 10);
-
+// dampen abrupt starts
+    leftMaster.configOpenloopRamp(0.5, 10);
+    rightMaster.configOpenloopRamp(0.5, 10);
+// overrides default of 0.02 I think
     drive.setDeadband(0.05);
-
   }   // end robotInit
+  
+  @Override
+  public void robotPeriodic() {
+    // SmartDashboard.putNumber("Arm Encoder Value",//
+    // armMotor.getSelectedSensorPosition() * kArmTick2Deg);
+
+    SmartDashboard.putNumber("Left Drive distance",
+        leftMaster.getSelectedSensorPosition() * kDriveTick2Feet);
+    SmartDashboard.putNumber("Right Drive distance",
+        rightMaster.getSelectedSensorPosition() * kDriveTick2Feet);
+  }
 
   @Override
   public void autonomousInit() {
@@ -142,9 +142,9 @@ public class Robot extends TimedRobot {
     double leftPosition = leftMaster.getSelectedSensorPosition() * kDriveTick2Feet;
     double rightPosition = rightMaster.getSelectedSensorPosition() * kDriveTick2Feet;
     double distance = (leftPosition + rightPosition) / 2;
-
+// use method of Diff. Drive to power R,L side equally, slow
     if (distance < 4) {
-      drive.tankDrive(0.6, 0.6);
+      drive.tankDrive(0.5, 0.5);
     } else {
       drive.tankDrive(0, 0);
     }
@@ -157,16 +157,16 @@ public class Robot extends TimedRobot {
 
   @Override
   public void teleopPeriodic() {
-    // driving
-    double power = -driverJoystick.getRawAxis(1); // remember: negative sign
+    // sched. automatically?
+    double power = -driverJoystick.getRawAxis(1); // rem: - sign
     double turn = driverJoystick.getRawAxis(4);
-    // deadband
+    // deadband set for DD class, not needed here
     if (Math.abs(power) < 0.05) {
       power = 0;
     }
     if (Math.abs(turn) < 0.05) {
       turn = 0;
-    }
+    } // use stick values in DD's arcade method
     drive.arcadeDrive(power * 0.6, turn * 0.3);
 
     // arm control
@@ -192,7 +192,7 @@ public class Robot extends TimedRobot {
     // } else {
     // hatchIntake.set(Value.kForward);
     // }
-  }
+  }  // end teleopPeriodic
 
   @Override
   public void testInit() {
@@ -204,7 +204,7 @@ public class Robot extends TimedRobot {
 
   @Override
   public void disabledInit() {
-    enableMotors(false);
+    enableMotors(false); // coast now
   }
 
   private void enableMotors(boolean on) {
@@ -222,5 +222,5 @@ public class Robot extends TimedRobot {
 
     // armSlave.setNeutralMode(mode);
     // rollerMotor.setNeutralMode(mode);
-  }
+  } // end enableMotor
 }
