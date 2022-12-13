@@ -22,10 +22,10 @@ public class Robot extends TimedRobot {
   // declare local instance vars for hardware, base drive class
 
   // CAN bus ID of motor
-  private static final int leftMasterID = 1;
-  private static final int leftSlaveID = 2;
-  private static final int rightMasterID = 3;
-  private static final int rightSlaveID = 4;
+  private static final int leftMasterID = 3;
+  private static final int leftSlaveID = 4;
+  private static final int rightMasterID = 1;
+  private static final int rightSlaveID = 2;
 
   // 4 Neo motor
   private CANSparkMax my_leftMaster;
@@ -40,7 +40,8 @@ public class Robot extends TimedRobot {
   @Override
   public void robotInit() {
 
-    /* instance motor, joystick, drive objects
+    /*
+     * instance motor, joystick, drive objects
      * This initializes two brushless Masters (Neos) with CAN IDs
      * and 2 Slave followers (Neos). Change IDs for your setup.
      */
@@ -63,10 +64,10 @@ public class Robot extends TimedRobot {
     // We need to invert one side of the drivetrain so that positive voltages
     // result in both sides moving forward. Depending on how your robot's
     // gearbox is constructed, you might have to invert the left side instead.
-    // but: Diff. Drive methods claim to invert R side without doing this:
+    //
 
-    // my_leftMaster.setInverted(false);
-    // my_rightMaster.setInverted(true);
+    my_leftMaster.setInverted(false);
+    my_rightMaster.setInverted(true);
 
     // slaves follow, probably follow setInversion too
     my_leftSlave.follow(my_leftMaster);
@@ -76,7 +77,7 @@ public class Robot extends TimedRobot {
 
     my_driveJoy = new XboxController(0);
 
-  }  // end robotInit
+  } // end robotInit
 
   @Override
   public void teleopPeriodic() {
@@ -86,5 +87,5 @@ public class Robot extends TimedRobot {
     // drive class has default deadband 0.02, change with .setDeadband(dbl)
     my_DiffDrive.arcadeDrive(-my_driveJoy.getLeftY() * 0.6, my_driveJoy.getRightX() * 0.3);
 
-  }  // end teleopPeriodic
+  } // end teleopPeriodic
 }
