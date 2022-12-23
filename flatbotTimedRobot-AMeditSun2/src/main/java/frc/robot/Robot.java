@@ -33,11 +33,11 @@ public class Robot extends TimedRobot {
   // inits run when the robot is started
 
   // actuators
-  private WPI_TalonSRX leftMaster = new WPI_TalonSRX(4);
-  private WPI_TalonSRX leftSlave = new WPI_TalonSRX(3);
+  private WPI_TalonSRX leftMaster = new WPI_TalonSRX(3);
+  private WPI_TalonSRX leftSlave = new WPI_TalonSRX(4);
     
-  private WPI_TalonSRX rightMaster = new WPI_TalonSRX(2);
-  private WPI_TalonSRX rightSlave = new WPI_TalonSRX(1);
+  private WPI_TalonSRX rightMaster = new WPI_TalonSRX(1);
+  private WPI_TalonSRX rightSlave = new WPI_TalonSRX(2);
 
   // private WPI_TalonSRX/ armMotor = new WPI_TalonSRX(5);
   // private WPI_TalonSRX armSlave = new WPI_TalonSRX(3);
@@ -64,7 +64,7 @@ public class Robot extends TimedRobot {
 
   @Override
   public void robotInit() {
-    // inverted settings usually one or other should be false
+    // invert motor -- usually one or other drive should be false
     leftMaster.setInverted(false);
     rightMaster.setInverted(true);
     // armMotor.setInverted(false);
@@ -79,12 +79,13 @@ public class Robot extends TimedRobot {
     rightSlave.setInverted(InvertType.FollowMaster);
     // armSlave.setInverted(InvertType.FollowMaster);
 
-    // init encoders integral in TalonSRX
+    // init remote encoder wired via TalonSRX
     leftMaster.configSelectedFeedbackSensor(FeedbackDevice.QuadEncoder,
      0, 20);
     rightMaster.configSelectedFeedbackSensor(FeedbackDevice.QuadEncoder,
      0, 20);
-    // armMotor.configSelectedFeedbackSensor(FeedbackDevice.QuadEncoder, 0, 10);
+    // armMotor.configSelectedFeedbackSensor(FeedbackDevice.QuadEncoder, 
+      0, 10);
 
     /*
      * Sets the phase of the sensor. Use when controller forward/reverse output
@@ -109,6 +110,7 @@ public class Robot extends TimedRobot {
     // armMotor.configForwardSoftLimitEnable(true, 10);
     // start compressor, automatic now
     // compressor.start();
+    
 // dampen abrupt starts
     leftMaster.configOpenloopRamp(0.5, 10);
     rightMaster.configOpenloopRamp(0.5, 10);
@@ -125,17 +127,16 @@ public class Robot extends TimedRobot {
         leftMaster.getSelectedSensorPosition() * kDriveTick2Feet);
     SmartDashboard.putNumber("Right Drive distance",
         rightMaster.getSelectedSensorPosition() * kDriveTick2Feet);
-  }
+  }  // end robotPeriodic
 
   @Override
   public void autonomousInit() {
-    enableMotors(true); // sets to Brake
-    // reset encoders to zero
+    enableMotors(true); // sets all to Brake
+    // reset encoders to zero [index0-3, loop 0-1, timeout]
     leftMaster.setSelectedSensorPosition(0, 0, 10);
     rightMaster.setSelectedSensorPosition(0, 0, 10);
     // armMotor.setSelectedSensorPosition(0, 0, 10);
-
-  }
+  } // end  autoInit
 
   @Override
   public void autonomousPeriodic() {
@@ -148,7 +149,7 @@ public class Robot extends TimedRobot {
     } else {
       drive.tankDrive(0, 0);
     }
-  }
+  }  // end autoPeriod
 
   @Override
   public void teleopInit() {
@@ -160,7 +161,7 @@ public class Robot extends TimedRobot {
     // sched. automatically?
     double power = -driverJoystick.getRawAxis(1); // rem: - sign
     double turn = driverJoystick.getRawAxis(4);
-    // deadband set for DD class, not needed here
+    // deadband set in DD class, not needed here ?
     if (Math.abs(power) < 0.05) {
       power = 0;
     }
@@ -223,4 +224,4 @@ public class Robot extends TimedRobot {
     // armSlave.setNeutralMode(mode);
     // rollerMotor.setNeutralMode(mode);
   } // end enableMotor
-}
+}  // end Robot.j
