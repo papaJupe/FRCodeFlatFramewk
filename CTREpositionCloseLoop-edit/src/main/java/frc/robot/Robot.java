@@ -1,29 +1,30 @@
 /**
- * CTREpositionCloseLoop-AMedit to test single motor positioning
- * PID tuning, w/ talonSRX motor+gearbox setting arm angle
+ * CTREpositionCloseLoop-AMedit to test single motor rot. position
+ * PID tuning, w/ talonSRX motor+gearbox; use 4 setting arm angle, rotating
+ * spool to lift, climb ...
  */
 
 /**
  * Description:
- * The PositionClosedLoop example demonstrates the Position closed-loop servo.
- * Tested with Logitech F350 USB Gamepad inserted into Driver Station
- * current values for MS joystick, its 3 = button 1, its 4 = button 2 in code
- * Be sure to select the correct feedback sensor using configSelectedFeedbackSensor().
- * Use Percent Output Mode (Holding  and using Left Joystick) to confirm talon is driving 
- * forward (Green LED on Talon/Victor) when the position sensor is moving in the positive 
- * direction. If this is not the case, flip the boolean input in setSensorPhase().
+ * PositionClosedLoop example demonstrates the Position closed-loop servo.
  * 
+ * current values for MS joystick, #3-8 button servo and Zaxis manual;
+ * Select the correct feedback sensor using configSelectedFeedbackSensor().
+ * Use Percent Output Mode (w/ button 4 & Joystick) to confirm talon drives 
+ * forward (Green LED on Talon/Victor) when the position sensor is moving
+ *  in the positive direction. If this is not the case, change the boolean 
+ * input in setSensorPhase().
  * Controls:
- * Button 1:(#3) When pressed, start and run Position Closed Loop on Talon/Victor
- * Button 2:(4) When held, start and run Percent Output
- * Left Joytick Y-Axis:
- * 	+ Position Closed Loop: Servo Talon forward and reverse [-10, 10] rotations
- * 	+ Percent Ouput: Throttle Talon forward and reverse
+ * Button #3 When pressed rezero position wherever it is
+ * Button #4 When held, start and run Percent Output of
+ * Left Joytick Z-Axis. Button 5,6,7,8 enable preset coded position
+ * 	+ Position Closed Loop: Servo Talon +/- w/ button 5-8
+ * 	+ Percent Ouput: throttle Talon forward and reverse
  * 
- * Gains for Position Closed Loop will be adjusted in PIDset.java
+ * Gains for Position Closed Loop could be adjusted in PIDset.java
  * if you can find it; other params from Constant hardcoded for clarity
- * all sim stuff commented out, lib deleted
- * 
+ * all sim stuff commented out, lib deleted. PID param found in Phoe.
+ * Tuner then added to Constants.j
  * Supported Version:
  * - Talon SRX: 4.00
  * - Victor SPX: 4.00
@@ -42,18 +43,30 @@ import com.ctre.phoenix.motorcontrol.can.*;
 // import frc.robot.sim.PhysicsSim;
 
 public class Robot extends TimedRobot {
-	/** Hardware */
+
 	WPI_TalonSRX _talon = new WPI_TalonSRX(11);
 	Joystick _joystk = new Joystick(0);
 
 	/** Used to create string to print data */
 	StringBuilder _sb = new StringBuilder();
-	int _loops = 0;
+	int _loops = 0; // refresh data every loop, print Q50 loop
 
 	/** Track button state for single press event */
-	boolean _lastButton1 = false;
+	boolean button3;
+	boolean button4;
+	boolean button5;
+	boolean button6;
+	boolean button7;
+	boolean button8;
 
-	/** Save the target position */
+	boolean _lastButton3 = false;
+	boolean _lastButton4 = false;
+	boolean _lastButton5 = false;
+	boolean _lastButton6 = false;
+	boolean _lastButton7 = false;
+	boolean _lastButton8 = false;
+
+	/** Saves the current targeted position */
 	double targetPositionRotations;
 
 	// public void simulationInit() {
@@ -68,44 +81,48 @@ public class Robot extends TimedRobot {
 		_talon.configFactoryDefault();
 
 		/**
-		 * Set based on what direction you want forward.
+		 * Set based on what controller direction you want forward.
 		 * according to CTRE sensor phase follows motor inversion setting
 		 */
-		_talon.setInverted(false);
+		_talon.setInverted(true);
 
-		/* Config the sensor used for Primary PID and sensor direction */
+		/* Config the sensor used for Primary PID and motor direction */
 		_talon.configSelectedFeedbackSensor(FeedbackDevice.QuadEncoder,
-				0,
-				30);
+				0, 30);
 
-		/* Ensure sensor is positive when actuator motion is positive */
-		_talon.setSensorPhase(false);
+		/*
+		 * Ensure sensor is positive when actuator motion is positive
+		 * w/ CIM+pulley setup this keeps CW rot (lift load) positive
+		 */
+		_talon.setSensorPhase(true);
 
-		/* Config the peak and nominal outputs, 12V means full */
+		/* Config the peak and nominal outputs, 1.0 means full 12v */
 		_talon.configNominalOutputForward(0, 30);
 		_talon.configNominalOutputReverse(0, 30);
-		_talon.configPeakOutputForward(0.5, 30);
-		_talon.configPeakOutputReverse(-0.5, 30);
+		_talon.configPeakOutputForward(0.3, 30);
+		_talon.configPeakOutputReverse(-0.3, 30);
 
 		/**
 		 * Config the allowable closed-loop error, Closed-Loop output will be
 		 * neutral within this range. See Table in Section 17.2.1 for native
 		 * units per rotation.
 		 */
-		// _talon.configAllowableClosedloopError(0, 400, 30);
+		_talon.configAllowableClosedloopError(0, 5, 30);
 
-		/* Config Position Closed Loop gains in slot0, typically kF stays zero.
-		(int slot, double value, int timeout) 
-		*/
+		/*
+		 * Configs Position Closed Loop gains in slot0, typically kF stays zero.
+		 * (int slot, double value, int timeout)
+		 */
 		_talon.config_kF(0, Constants.kGains.kF, 30);
 		_talon.config_kP(0, Constants.kGains.kP, 30);
 		_talon.config_kI(0, Constants.kGains.kI, 30);
 		_talon.config_kD(0, Constants.kGains.kD, 30);
+		_talon.config_IntegralZone(0, Constants.kGains.kIzone, 30);
 
 		/**
 		 * Get the 0-360 degree value of the MagEncoder's absolute
-		 * position, and initially set the relative sensor to match, why?
-		 * not do the opposite.
+		 * position, and initially set the relative sensor to match, why
+		 * not do the opposite?
 		 */
 		// int absolutePosition = _talon.getSensorCollection().getPulseWidthPosition();
 
@@ -116,95 +133,132 @@ public class Robot extends TimedRobot {
 
 		/* Set the quadrature (relative) sensor to match absolute--mag only */
 		// _talon.setSelectedSensorPosition(absolutePosition, 0, 30);
-	}   // end robotInit
+	} // end robotInit
 
 	void commonLoop() {
-		/* joystk input */
-		double leftYstick = _joystk.getY();
-		double joySlide = _joystk.getRawAxis(3);
-		// l-hornButton triggers position mode, value from slider 0-1
-		boolean button1 = _joystk.getRawButton(3); 
-		// r-hornButton triggers rezero then joystick control +/-
-		boolean button2 = _joystk.getRawButton(4); 
+		/* joystk input for manual control */
+		double leftZstick = _joystk.getZ();
 
-		/* Get Talon/Victor's current output percentage */
-		double motorOutput = _talon.getMotorOutputPercent();
+		// L-hornButton rezeros sensor
+		button3 = _joystk.getRawButton(3);
+		// r-hornButton --> enable joystick(z) 2 control motor
+		button4 = _joystk.getRawButton(4);
+		// go to preset spool position, 5 --> up N tick
+		button5 = _joystk.getRawButton(5);
 
-		/* Deadband stick output, overriding defaults in motor config */
-		if (Math.abs(leftYstick) < 0.05) {
+		// button 6 --> raise to max ht (safe from 0 pos only)
+		button6 = _joystk.getRawButton(6);
+		// go to preset spool position, 7 --> down N tick
+		boolean button7 = _joystk.getRawButton(7);
+		// button 8 --> drop to lowest, safe from top if not rezeroed
+		button8 = _joystk.getRawButton(8);
+		
+		/* Deadband stick output, overriding default in motor config */
+		if (Math.abs(leftZstick) < 0.05) {
+			leftZstick = 0;
 			/* Within 5% of zero */
-			leftYstick = 0;
 		}
-		if (Math.abs(joySlide) < 0.05) {
-			/* Within 5% of zero */
-			joySlide = 0;
-		}
+		// gather data and print to Console
 
 		/* Prepare line to print */
-		_sb.append("\tVout:");
-		/* Cast to int to remove decimal places */
-		_sb.append((int) (motorOutput * 100));
-		_sb.append("%"); // Percent
+		_sb.append("\tVout: ");
+		/* Cast to int to remove decimal value */
+		_sb.append((int)(_talon.getMotorOutputPercent() * 100));
+		_sb.append("%  "); // Percent
 
-		_sb.append("\tpos:");
+		_sb.append("\tPos: ");
 		_sb.append(_talon.getSelectedSensorPosition(0));
-		_sb.append("u"); // Native units
+		_sb.append("u"); // Native encoder units
 
 		/**
+		 * orig ctre code used:if (!_lastButton1 && button1)
 		 * When button 1 is pressed, do Position Closed Loop to
-		 * joySlide position x10, [-10, 10] rotations
-		 * only true on new button press @start or after previous release
-		 * so not clear if it runs every loop
+		 * target position in native encoder rotations
+		 * if() only true on new button press @start or after release;
+		 * not clear if/why it runs every loop, but completes cmd anyway
 		 */
-		if (!_lastButton1 && button1) {
 
-			/* 10 Rotations * 4096 u/rev in 0-1 direction  w/ slide */
-			targetPositionRotations = joySlide * 10.0 * 4096;
+		// now should stop motion & last pos cmd on re-enable
+		if (button3) { // [pos,indx,timeout]
+			_talon.setSelectedSensorPosition(0, 0, 30);
+			targetPositionRotations = 0;
+			_talon.set(ControlMode.Position, targetPositionRotations);
+			_sb.append("\tButton3 rezeroed: ");
+			_sb.append(_talon.getSelectedSensorPosition(0));
+			_sb.append("u"); // Native units
+
+		}
+		/*
+		 * if button 4 is held, adjust position w/ stick's Z axis;
+		 * rezero wasn't helpful for button positioning
+		 */
+		if (button4) {
+			// if (Math.abs(leftZstick) < 0.02) {
+			// _talon.setSelectedSensorPosition(0, 0, 30);
+			// _sb.append("\trezero by button:");
+			// _sb.append(_talon.getSelectedSensorPosition(0));
+			// _sb.append("u"); // Native units
+			// }
+			_talon.set(ControlMode.PercentOutput, leftZstick);
+		}
+		// only want 1 activation / press: raise N tick
+		if (!_lastButton5 && button5) {
+			double now = (_talon.getSelectedSensorPosition());
+			targetPositionRotations = now + 1500;
 			_talon.set(ControlMode.Position, targetPositionRotations);
 		}
 
-		/*
-		 * if button 2 is held, adjust position w/ stick's Y axis
-		 * but on brief press if stick < deadband just zero encoder
-		 */
-		if (button2) {
-			if (Math.abs(leftYstick) < 0.02) {
-				_talon.setSelectedSensorPosition(0, 0, 30);
-				_sb.append("\trezero by button:");
-				_sb.append(_talon.getSelectedSensorPosition(0));
-				_sb.append("u"); // Native units
-			}
-
-			_talon.set(ControlMode.PercentOutput, leftYstick);
+		if (!_lastButton6 && button6) { // raise fully
+			// only safe from zero tick = fully down
+			targetPositionRotations = 7000;
+			_talon.set(ControlMode.Position, targetPositionRotations);
 		}
 
-		/* If Talon doing position closed-loop, gather error and target # */
+		// only want 1 activation/press: lower N tick
+		if (!_lastButton7 && button7) {
+			double now = (_talon.getSelectedSensorPosition());
+			targetPositionRotations = now - 1500;
+			_talon.set(ControlMode.Position, targetPositionRotations);
+		}
+
+		if (!_lastButton8 && button8) {
+			// only safe if fully up and unzeroed
+			targetPositionRotations = 0;
+			_talon.set(ControlMode.Position, targetPositionRotations);
+		}
+
+		/* If Talon doing position closed-loop, gather error and target */
 		if (_talon.getControlMode() == ControlMode.Position) {
-			/* append more info to print when in posit mode. */
-			_sb.append("\terro:");
+			_sb.append("\tError: ");
 			_sb.append(_talon.getClosedLoopError(0));
 			_sb.append("u"); // Native Units (rot?)
 
-			_sb.append("\ttarg:");
+			_sb.append("\tTarg:");
 			_sb.append(targetPositionRotations);
 			_sb.append("u"); /// Native Units
 		}
 
 		/**
-		 * Print every ten loops, printing too much too fast is generally bad
+		 * Print every N loops, printing too much too fast is bad
 		 * for performance.
 		 */
-		if (++_loops >= 20) {
+		if (++_loops >= 50) {
 			_loops = 0;
 			System.out.println(_sb.toString());
 		}
 
-		/* Reset built string for next loop */
+		/* Empty string for fresh data next loop */
 		_sb.setLength(0);
 
-		/* Save button state for on press detect */
-		_lastButton1 = button1;
-	}
+		/* Save button state for on-press detection */
+		_lastButton3 = button3;
+		_lastButton4 = button4;
+		_lastButton5 = button5;
+		_lastButton6 = button6;
+		_lastButton7 = button7;
+		_lastButton8 = button8;
+
+	} // end commonLoop
 
 	/**
 	 * This function is called periodically during operator control
@@ -212,4 +266,53 @@ public class Robot extends TimedRobot {
 	public void teleopPeriodic() {
 		commonLoop();
 	}
-}
+
+	@Override // used to debug problem; not normally needed
+	public void disabledInit() {
+		_talon.setSelectedSensorPosition(0);
+		targetPositionRotations = 0;
+		_talon.set(ControlMode.Position, targetPositionRotations);
+		button5 = false;
+		button6 = false;
+		button7 = false;
+		button8 = false;
+
+		_loops = 0;
+	}
+
+	@Override // print pos setting button value
+	public void disabledPeriodic() {
+
+		_sb.append("\tButt5: ");
+		_sb.append(button5);
+		_sb.append("  ");
+
+		_sb.append("\tButt6: ");
+		_sb.append(button6);
+		_sb.append("  ");
+
+		_sb.append("\tButt7: ");
+		_sb.append(button7);
+		_sb.append("\n");
+
+		_sb.append("\tButt8: ");
+		_sb.append(button8);
+		_sb.append("  ");
+
+		_sb.append("\tPos: ");
+		_sb.append(_talon.getSelectedSensorPosition());
+		_sb.append("u  "); // Native encod Units
+
+		_sb.append("\tTarg:");
+		_sb.append(targetPositionRotations);
+		_sb.append("u\n"); // Native encod Units
+
+		if (++_loops >= 60) {
+			_loops = 0;
+			System.out.println(_sb.toString());
+
+		} // end print
+			// purge for next disabled loop to fill string
+		_sb.setLength(0);
+	} // end disablePeriod
+} // end Robot.j

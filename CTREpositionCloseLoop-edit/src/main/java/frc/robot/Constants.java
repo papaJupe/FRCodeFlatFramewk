@@ -28,15 +28,16 @@ public class Constants {
 	public static boolean kSensorPhase = false;
 
 	/**
-	 * Choose based on what direction you want to be positive,
-	 * this does not affect motor invert.
+	 * affects direction read from absolute to relative encoder,
+	 *  does not affect motor invert itself. no use in current code
 	 */
 	public static boolean kMotorInvert = false;
 
 	/**
-	 * param used in Position Closed Loop, entered here ? then
+	 * param used in Position Closed Loop, entered here, then
 	 * instanced in Gains(kp, ki, kd, kf, izone, peak output) class;
-	 * but why? vs. set value here and call like other k_things
+	 * values of Gains instance used in call from Robot.j
+	 * values here found via testing in Phoenix Tuner
 	 */
-	static final Gains kGains = new Gains(0.15, 0.0, 1.0, 0.0, 0, 1.0);
+	static final Gains kGains = new Gains(0.5, 0.0008, 10.0, 0.0, 300, 1.0);
 }
