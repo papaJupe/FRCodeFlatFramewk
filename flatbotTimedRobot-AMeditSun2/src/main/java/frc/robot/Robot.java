@@ -1,11 +1,11 @@
 
-/* Copyright (c) 2018 FIRST. All Rights Reserved.              */
-/* Open Source Software - may be modified and shared by FRC teams.*/
-/* must have the FIRST BSD license file in the root directory */
-                                                              
-/* imported from SunCode#2timedRobot, simple flat framework, edited 221123 for 
-Flatbot, single joystick, TalonSRX x4 CA drive, auto from encoder distance, 
-no PID, motor encoder values to smart dashboard, all params may need retune */
+/* flatbotTimedRobot-AMeditSun2 */
+
+/* originally SunCode#2timedRobot, simple flat framework, edited 2211+ for 
+flatbot, single joystick, TalonSRX x4, CA drive, auto from encoder distance, 
+no PID, msend encoder values to smart dashboard, To Do -- check all param
+ polarity, inversion, phoen tuner check tick-drive conversion; next
+ version, add PID to auto cmd, button control of drive et al, device rot.? */
 
 package frc.robot;
 
@@ -27,15 +27,16 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 /**
  * The VM is configured to automatically run this class, and to call the
  * functions corresponding to each mode, as described in the TimedRobot
- * documentation. 
+ * documentation.
  */
 public class Robot extends TimedRobot {
-  // inits run when the robot is started
+  // declare, instance hardware, I/O device, motor enabler class,
+  // unit conversion, constant
 
   // actuators
   private WPI_TalonSRX leftMaster = new WPI_TalonSRX(3);
   private WPI_TalonSRX leftSlave = new WPI_TalonSRX(4);
-    
+
   private WPI_TalonSRX rightMaster = new WPI_TalonSRX(1);
   private WPI_TalonSRX rightSlave = new WPI_TalonSRX(2);
 
@@ -46,24 +47,23 @@ public class Robot extends TimedRobot {
 
   // // private Compressor compressor = new Compressor(null);
   // private DoubleSolenoid hatchIntake = new
-  // DoubleSolenoid(PneumaticsModuleType.CTREPCM,
-  // 0, 1); // PCM port 0, 1
+  // DoubleSolenoid(PneumaticsModuleType.CTREPCM, 0, 1); // PCM port 0, 1
 
-	// drive mode class instanced using above motor instance
-	// -- gives you arcadeDrive() et al methods
+  // drive mode class instanced using above motor instance
+  // -- gives you arcadeDrive() et al methods
   private DifferentialDrive drive = new DifferentialDrive(leftMaster, rightMaster);
 
   // joysticks
   private Joystick driverJoystick = new Joystick(0);
   // private Joystick operatorJoystick = new Joystick(1);
 
-  // unit conversion
+  // unit conversion for flatbot, 1 wheel rot = 10700 tick
   private final double kDriveTick2Feet = 1.0 / 10700 * 6 * Math.PI / 12;
   // private final double kArmTick2Deg = 360.0 / 512 * 26 / 42 * 18 /
   // 60 * 18 / 84;
 
   @Override
-  public void robotInit() {
+  public void robotInit() { // settings valid here, not before
     // invert motor -- usually one or other drive should be false
     leftMaster.setInverted(false);
     rightMaster.setInverted(true);
@@ -73,25 +73,25 @@ public class Robot extends TimedRobot {
     leftSlave.follow(leftMaster);
     rightSlave.follow(rightMaster);
     // armSlave.follow//(armMotor);
-    
+
     // should follow, so maybe not needed?
     leftSlave.setInverted(InvertType.FollowMaster);
     rightSlave.setInverted(InvertType.FollowMaster);
     // armSlave.setInverted(InvertType.FollowMaster);
 
-    // init remote encoder wired via TalonSRX
+    // init remote encoder wired via these TalonSRX
     leftMaster.configSelectedFeedbackSensor(FeedbackDevice.QuadEncoder,
-     0, 20);
+        0, 20);
     rightMaster.configSelectedFeedbackSensor(FeedbackDevice.QuadEncoder,
-     0, 20);
-    // armMotor.configSelectedFeedbackSensor(FeedbackDevice.QuadEncoder, 
-      0, 10);
+        0, 20);
+    // armMotor.configSelectedFeedbackSensor(FeedbackDevice.QuadEncoder,
+    // 0, 10);
 
     /*
-     * Sets the phase of the sensor. Use when controller forward/reverse output
+     * Sets phase of the sensor. Use when controller forward/reverse output
      * doesn't correlate to appropriate forward/reverse reading of sensor.
      * Pick a value so that positive PercentOutput yields a positive change in
-     * sensor. Should follow controller invert setting, so may not need
+     * sensor. Should follow controller invert setting, so may not need?
      * After setting this, user can freely call SetInverted() with any value.
      */
     leftMaster.setSensorPhase(false);
@@ -110,46 +110,46 @@ public class Robot extends TimedRobot {
     // armMotor.configForwardSoftLimitEnable(true, 10);
     // start compressor, automatic now
     // compressor.start();
-    
-// dampen abrupt starts
+
+    // dampen abrupt starts
     leftMaster.configOpenloopRamp(0.5, 10);
     rightMaster.configOpenloopRamp(0.5, 10);
-// overrides default of 0.02 I think
+    // overrides default of 0.02 I think
     drive.setDeadband(0.05);
-  }   // end robotInit
-  
+  } // end robotInit
+
   @Override
   public void robotPeriodic() {
     // SmartDashboard.putNumber("Arm Encoder Value",//
     // armMotor.getSelectedSensorPosition() * kArmTick2Deg);
 
-    SmartDashboard.putNumber("Left Drive distance",
+    SmartDashboard.putNumber("LeftDriveDist (ft)",
         leftMaster.getSelectedSensorPosition() * kDriveTick2Feet);
-    SmartDashboard.putNumber("Right Drive distance",
+    SmartDashboard.putNumber("RightDriveDist (ft)",
         rightMaster.getSelectedSensorPosition() * kDriveTick2Feet);
-  }  // end robotPeriodic
+  } // end robotPeriodic
 
-  @Override
+  @Override 
   public void autonomousInit() {
-    enableMotors(true); // sets all to Brake
+    enableMotors(true); // sets all to neutral Brake
     // reset encoders to zero [index0-3, loop 0-1, timeout]
     leftMaster.setSelectedSensorPosition(0, 0, 10);
     rightMaster.setSelectedSensorPosition(0, 0, 10);
     // armMotor.setSelectedSensorPosition(0, 0, 10);
-  } // end  autoInit
+  } // end autoInit
 
-  @Override
+  @Override // no defined auto cmd, but there could be, and called here
   public void autonomousPeriodic() {
     double leftPosition = leftMaster.getSelectedSensorPosition() * kDriveTick2Feet;
     double rightPosition = rightMaster.getSelectedSensorPosition() * kDriveTick2Feet;
     double distance = (leftPosition + rightPosition) / 2;
-// use method of Diff. Drive to power R,L side equally, slow
+    // use method of Diff. Drive to power R,L side equally, slow
     if (distance < 4) {
       drive.tankDrive(0.5, 0.5);
     } else {
       drive.tankDrive(0, 0);
     }
-  }  // end autoPeriod
+  } // end autoPeriod
 
   @Override
   public void teleopInit() {
@@ -158,10 +158,9 @@ public class Robot extends TimedRobot {
 
   @Override
   public void teleopPeriodic() {
-    // sched. automatically?
     double power = -driverJoystick.getRawAxis(1); // rem: - sign
     double turn = driverJoystick.getRawAxis(4);
-    // deadband set in DD class, not needed here ?
+    // deadband set in DD class, this overrides
     if (Math.abs(power) < 0.05) {
       power = 0;
     }
@@ -170,8 +169,8 @@ public class Robot extends TimedRobot {
     } // use stick values in DD's arcade method
     drive.arcadeDrive(power * 0.6, turn * 0.3);
 
-    // arm control
-    // double armPower = -operatorJoystick.getRawAxis(1); // remember negative sign
+    // arm [device] control w/ stick or button, +/- PID could execute here
+    // double armPower = -operatorJoystick.getRawAxis(1); // nb<-- negative sign
     // if (Math.abs(armPower) < 0.05) {
     // armPower = 0;
     // }
@@ -193,15 +192,7 @@ public class Robot extends TimedRobot {
     // } else {
     // hatchIntake.set(Value.kForward);
     // }
-  }  // end teleopPeriodic
-
-  @Override
-  public void testInit() {
-  }
-
-  @Override
-  public void testPeriodic() {
-  }
+  } // end teleopPeriodic
 
   @Override
   public void disabledInit() {
@@ -224,4 +215,12 @@ public class Robot extends TimedRobot {
     // armSlave.setNeutralMode(mode);
     // rollerMotor.setNeutralMode(mode);
   } // end enableMotor
-}  // end Robot.j
+
+  @Override
+  public void testInit() {
+  }
+
+  @Override
+  public void testPeriodic() {
+  }
+} // end Robot.j

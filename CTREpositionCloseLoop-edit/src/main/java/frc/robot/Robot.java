@@ -1,23 +1,25 @@
 /**
  * CTREpositionCloseLoop-AMedit to test single motor rot. position
- * PID tuning, w/ talonSRX motor+gearbox; use 4 setting arm angle, rotating
- * spool to lift, climb ...
+ * PID tuning, w/ talonSRX motor+gearbox; use in config arm angle, 
+ * rotating spool to lift, climb ... all sorts of position things
  */
 
 /**
  * Description:
- * PositionClosedLoop example demonstrates the Position closed-loop servo.
+ * PositionClosedLoop example demonstrates Position closed-loop servo.
  * 
  * current values for MS joystick, #3-8 button servo and Zaxis manual;
+ * CIM+talonSRX+spool bench test has ~1550 tick/wheel rotation
+ * PID gain # in Constants seem to work for light and heavy load.
  * Select the correct feedback sensor using configSelectedFeedbackSensor().
  * Use Percent Output Mode (w/ button 4 & Joystick) to confirm talon drives 
  * forward (Green LED on Talon/Victor) when the position sensor is moving
- *  in the positive direction. If this is not the case, change the boolean 
+ * in the positive direction. If this is not the case, change the boolean 
  * input in setSensorPhase().
  * Controls:
  * Button #3 When pressed rezero position wherever it is
- * Button #4 When held, start and run Percent Output of
- * Left Joytick Z-Axis. Button 5,6,7,8 enable preset coded position
+ * Button #4 When held, start and run Percent Output w/
+ * left Joytick Z-Axis. Button 5,6,7,8 enable preset coded position
  * 	+ Position Closed Loop: Servo Talon +/- w/ button 5-8
  * 	+ Percent Ouput: throttle Talon forward and reverse
  * 
@@ -49,7 +51,7 @@ public class Robot extends TimedRobot {
 
 	/** Used to create string to print data */
 	StringBuilder _sb = new StringBuilder();
-	int _loops = 0; // refresh data every loop, print Q50 loop
+	int _loops = 0; // refresh data every loop, print Q 60 loop
 
 	/** Track button state for single press event */
 	boolean button3;
@@ -77,10 +79,10 @@ public class Robot extends TimedRobot {
 	// PhysicsSim.getInstance().run();
 
 	public void robotInit() {
-		/* Factory Default all hardware */
+		/* Factory Default Talon */
 		_talon.configFactoryDefault();
 
-		/**
+		/*
 		 * Set based on what controller direction you want forward.
 		 * according to CTRE sensor phase follows motor inversion setting
 		 */
@@ -117,7 +119,7 @@ public class Robot extends TimedRobot {
 		_talon.config_kP(0, Constants.kGains.kP, 30);
 		_talon.config_kI(0, Constants.kGains.kI, 30);
 		_talon.config_kD(0, Constants.kGains.kD, 30);
-		_talon.config_IntegralZone(0, Constants.kGains.kIzone, 30);
+		_talon.config_IntegralZone(0, Constants.kGains.kIzone, 150);
 
 		/**
 		 * Get the 0-360 degree value of the MagEncoder's absolute
@@ -134,6 +136,11 @@ public class Robot extends TimedRobot {
 		/* Set the quadrature (relative) sensor to match absolute--mag only */
 		// _talon.setSelectedSensorPosition(absolutePosition, 0, 30);
 	} // end robotInit
+
+	// This function is called periodically during operator control
+	public void teleopPeriodic() {
+		commonLoop();
+	}
 
 	void commonLoop() {
 		/* joystk input for manual control */
@@ -152,18 +159,18 @@ public class Robot extends TimedRobot {
 		boolean button7 = _joystk.getRawButton(7);
 		// button 8 --> drop to lowest, safe from top if not rezeroed
 		button8 = _joystk.getRawButton(8);
-		
+
 		/* Deadband stick output, overriding default in motor config */
-		if (Math.abs(leftZstick) < 0.05) {
+		if (Math.abs(leftZstick) < 0.04) {
 			leftZstick = 0;
-			/* Within 5% of zero */
+			/* Within 4% of zero */
 		}
 		// gather data and print to Console
 
 		/* Prepare line to print */
 		_sb.append("\tVout: ");
 		/* Cast to int to remove decimal value */
-		_sb.append((int)(_talon.getMotorOutputPercent() * 100));
+		_sb.append((int) (_talon.getMotorOutputPercent() * 100));
 		_sb.append("%  "); // Percent
 
 		_sb.append("\tPos: ");
@@ -174,8 +181,6 @@ public class Robot extends TimedRobot {
 		 * orig ctre code used:if (!_lastButton1 && button1)
 		 * When button 1 is pressed, do Position Closed Loop to
 		 * target position in native encoder rotations
-		 * if() only true on new button press @start or after release;
-		 * not clear if/why it runs every loop, but completes cmd anyway
 		 */
 
 		// now should stop motion & last pos cmd on re-enable
@@ -186,22 +191,23 @@ public class Robot extends TimedRobot {
 			_sb.append("\tButton3 rezeroed: ");
 			_sb.append(_talon.getSelectedSensorPosition(0));
 			_sb.append("u"); // Native units
-
 		}
 		/*
 		 * if button 4 is held, adjust position w/ stick's Z axis;
-		 * rezero wasn't helpful for button positioning
 		 */
 		if (button4) {
 			// if (Math.abs(leftZstick) < 0.02) {
 			// _talon.setSelectedSensorPosition(0, 0, 30);
-			// _sb.append("\trezero by button:");
 			// _sb.append(_talon.getSelectedSensorPosition(0));
 			// _sb.append("u"); // Native units
 			// }
-			_talon.set(ControlMode.PercentOutput, leftZstick);
+			_talon.set(ControlMode.PercentOutput, leftZstick * 0.2);
 		}
-		// only want 1 activation / press: raise N tick
+		// only want 1 activation / press for next 4 button
+		//* rezero wasn't helpful for button positioning
+		// if() condx only true on new button press @start or after
+		// release; not clear how/why it runs to complete .set cmd
+	
 		if (!_lastButton5 && button5) {
 			double now = (_talon.getSelectedSensorPosition());
 			targetPositionRotations = now + 1500;
@@ -210,7 +216,7 @@ public class Robot extends TimedRobot {
 
 		if (!_lastButton6 && button6) { // raise fully
 			// only safe from zero tick = fully down
-			targetPositionRotations = 7000;
+			targetPositionRotations = 8200;
 			_talon.set(ControlMode.Position, targetPositionRotations);
 		}
 
@@ -242,7 +248,7 @@ public class Robot extends TimedRobot {
 		 * Print every N loops, printing too much too fast is bad
 		 * for performance.
 		 */
-		if (++_loops >= 50) {
+		if (++_loops >= 60) {
 			_loops = 0;
 			System.out.println(_sb.toString());
 		}
@@ -258,61 +264,54 @@ public class Robot extends TimedRobot {
 		_lastButton7 = button7;
 		_lastButton8 = button8;
 
-	} // end commonLoop
+	} // end commonLoop()
 
-	/**
-	 * This function is called periodically during operator control
-	 */
-	public void teleopPeriodic() {
-		commonLoop();
-	}
+	// @Override // used to debug problem; not normally needed
+	// public void disabledInit() {
+	// 	_talon.setSelectedSensorPosition(0);
+	// 	targetPositionRotations = 0;
+	// 	_talon.set(ControlMode.Position, targetPositionRotations);
+	// 	button5 = false;
+	// 	button6 = false;
+	// 	button7 = false;
+	// 	button8 = false;
 
-	@Override // used to debug problem; not normally needed
-	public void disabledInit() {
-		_talon.setSelectedSensorPosition(0);
-		targetPositionRotations = 0;
-		_talon.set(ControlMode.Position, targetPositionRotations);
-		button5 = false;
-		button6 = false;
-		button7 = false;
-		button8 = false;
+	// 	_loops = 0;
+	// }
 
-		_loops = 0;
-	}
+	// @Override // print pos setting button value
+	// public void disabledPeriodic() {
 
-	@Override // print pos setting button value
-	public void disabledPeriodic() {
+	// _sb.append("\tButt5: ");
+	// _sb.append(button5);
+	// _sb.append(" ");
 
-		_sb.append("\tButt5: ");
-		_sb.append(button5);
-		_sb.append("  ");
+	// _sb.append("\tButt6: ");
+	// _sb.append(button6);
+	// _sb.append(" ");
 
-		_sb.append("\tButt6: ");
-		_sb.append(button6);
-		_sb.append("  ");
+	// _sb.append("\tButt7: ");
+	// _sb.append(button7);
+	// _sb.append("\n");
 
-		_sb.append("\tButt7: ");
-		_sb.append(button7);
-		_sb.append("\n");
+	// _sb.append("\tButt8: ");
+	// _sb.append(button8);
+	// _sb.append(" ");
 
-		_sb.append("\tButt8: ");
-		_sb.append(button8);
-		_sb.append("  ");
+	// _sb.append("\tPos: ");
+	// _sb.append(_talon.getSelectedSensorPosition());
+	// _sb.append("u "); // Native encod Units
 
-		_sb.append("\tPos: ");
-		_sb.append(_talon.getSelectedSensorPosition());
-		_sb.append("u  "); // Native encod Units
+	// _sb.append("\tTarg:");
+	// _sb.append(targetPositionRotations);
+	// _sb.append("u\n"); // Native encod Units
 
-		_sb.append("\tTarg:");
-		_sb.append(targetPositionRotations);
-		_sb.append("u\n"); // Native encod Units
+	// if (++_loops >= 60) {
+	// _loops = 0;
+	// System.out.println(_sb.toString());
 
-		if (++_loops >= 60) {
-			_loops = 0;
-			System.out.println(_sb.toString());
-
-		} // end print
-			// purge for next disabled loop to fill string
-		_sb.setLength(0);
-	} // end disablePeriod
+	// } // end print
+	// // purge for next disabled loop to fill string
+	// _sb.setLength(0);
+	// } // end disablePeriod
 } // end Robot.j

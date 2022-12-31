@@ -39,5 +39,5 @@ public class Constants {
 	 * values of Gains instance used in call from Robot.j
 	 * values here found via testing in Phoenix Tuner
 	 */
-	static final Gains kGains = new Gains(0.5, 0.0008, 10.0, 0.0, 300, 1.0);
+	static final Gains kGains = new Gains(0.5, 0.0007, 30.0, 0.0, 350, 1.0);
 }
