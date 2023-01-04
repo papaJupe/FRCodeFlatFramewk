@@ -1,10 +1,12 @@
 
-/* flatbotTimedRobot-AMeditSun2 */
+/* flatbotTimedRobot-v1-final
+  was flatbotTimedRobot-AMeditSun2 
+*/
 
 /* originally SunCode#2timedRobot, simple flat framework, edited 2211+ for 
 flatbot, single joystick, TalonSRX x4, CA drive, auto from encoder distance, 
-no PID, msend encoder values to smart dashboard, To Do -- check all param
- polarity, inversion, phoen tuner check tick-drive conversion; next
+no PID, msend encoder values to smart dashboard, done -- check all param
+ polarity, inversion, phoen tuner check tick-drive conversion; next v2
  version, add PID to auto cmd, button control of drive et al, device rot.? */
 
 package frc.robot;

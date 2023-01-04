@@ -1,10 +1,12 @@
-/* flatbotTimedRobot-v2-AMedit */
+/* flatbotTimedRobot-v2-AMfinal */
 
 /* originally SunCode#2timedRobot, simple flat framework, edited 
-2211+ --> new vers. flatbotTRv1: single joystick, TalonSRX x4, 
+2211+ --> vers.1 = flatbotTRv1: single joystick, TalonSRX x4, 
 CA drive, auto from encoder distance, no PID, send encoder values 
-to smart dashboard. 221225+, new v 2, add PID control drive in Auto 
-periodic, button pos.control of drive in teleop, straight drive.
+to smart dashboard. 
+221225+, new v 2, add PID control of drive in Auto periodic, 
+button pos.control of drive in teleop, straight drive.
+
 221229+ new v 3 add Auto option via chooser, sequential Cmd, rot.,
 reverse path, ? need Cmd object to do sequential? keep flat format?
 */
@@ -76,16 +78,16 @@ public class Robot extends TimedRobot {
   boolean _lastButton7 = false;
   boolean _lastButton8 = false;
 
-  // param for auto drive to position, set below ln.
-  double targetDriveFt = 4.0;
-  int targetRotation;
-
   // unit conversion for flatbot, 1 wheel rot, 18.7in = 10700 tick
   // 4.5 ft = ~32000
   private final double kDriveFt2Tick = (10700 * 12) / (6 * Math.PI);
   // private final double kDriveTick2Feet = (6 * Math.PI / 12) / 10700;
   // private final double kArmTick2Deg = 360.0 / 512 * 26 / 42 * 18 /
   // 60 * 18 / 84;
+
+  // param for auto drive to position, used in autoPeri
+  double targetDriveFt = 4.0;
+  int targetRotation = (int) (targetDriveFt * kDriveFt2Tick);
 
   // set here after tuning in PT
   static final double kP = 0.3;
@@ -177,9 +179,7 @@ public class Robot extends TimedRobot {
     rightMaster.configOpenloopRamp(0.1, 20);
     // overrides default of 0.02 I think
     drive.setDeadband(0.04);
-    // // set target # here
-    // targetDriveFt = 4;
-    targetRotation = (int) (targetDriveFt * kDriveFt2Tick);
+
 
   } // end robotInit
 
@@ -225,6 +225,7 @@ public class Robot extends TimedRobot {
 
     leftMaster.set(ControlMode.Position, targetRotation);
     rightMaster.set(ControlMode.Position, targetRotation);
+    
     // expected to print from roboPeriod but not unless here too
     _sb.append("\tVout: ");
     /* Cast to int to remove extra decimal # */
