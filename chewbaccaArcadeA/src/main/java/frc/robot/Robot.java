@@ -1,4 +1,4 @@
-// sasquatchArcadeA : arcade drive w/ 4 Neo on CA drive, flat framework
+// chewbaccaArcadeA : arcade drive w/ 4 Neo on CA drive, flat framework
 //  drives only, no Auto, edited AM 221204 from REV example Motor_Follow
 
 // Copyright (c) FIRST and other WPILib contributors.
@@ -72,6 +72,9 @@ public class Robot extends TimedRobot {
     // slaves follow, probably follow setInversion too
     my_leftSlave.follow(my_leftMaster);
     my_rightSlave.follow(my_rightMaster);
+
+    my_leftMaster.setOpenLoopRampRate(0.5);
+    my_rightMaster.setOpenLoopRampRate(0.5);
 
     my_DiffDrive = new DifferentialDrive(my_leftMaster, my_rightMaster);
 
