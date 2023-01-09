@@ -1,10 +1,12 @@
-/* flatbotTimedRobot-v2-AMedit */
+/* flatbotTimedRobot-v3-AMedit */
 
 /* originally SunCode#2timedRobot, simple flat framework, edited 
 2211+ --> new vers. flatbotTRv1: single joystick, TalonSRX x4, 
 CA drive, auto from encoder distance, no PID, send encoder values 
-to smart dashboard. 221225+, new v 2, add PID control drive in Auto 
-periodic, button pos.control of drive in teleop, straight drive.
+to console. 
+221225+, new v 2, add PID control drive in Auto periodic, button 
+pos.control of drive in teleop, straight drive fwd/bak.
+
 221229+ new v 3 add Auto option via chooser, sequential Cmd, rot.,
 reverse path, ? need Cmd object to do sequential? keep flat format?
 */
@@ -154,11 +156,11 @@ public class Robot extends TimedRobot {
     leftMaster.configNominalOutputReverse(0, 20);
     rightMaster.configNominalOutputReverse(0, 20);
 
-    leftMaster.configPeakOutputForward(0.8, 20);
-    leftMaster.configPeakOutputReverse(-0.8, 20);
+    leftMaster.configPeakOutputForward(0.5, 20);
+    leftMaster.configPeakOutputReverse(-0.5, 20);
 
-    rightMaster.configPeakOutputForward(0.8, 20);
-    rightMaster.configPeakOutputReverse(-0.8, 20);
+    rightMaster.configPeakOutputForward(0.5, 20);
+    rightMaster.configPeakOutputReverse(-0.5, 20);
 
     // Closed-Loop output will be neutral within this range
     leftMaster.configAllowableClosedloopError(0, 50, 20);
@@ -173,8 +175,8 @@ public class Robot extends TimedRobot {
     leftMaster.config_IntegralZone(0, kIzone, 20);
 
     // dampen abrupt starts in manual mode
-    leftMaster.configOpenloopRamp(0.1, 20);
-    rightMaster.configOpenloopRamp(0.1, 20);
+    leftMaster.configOpenloopRamp(0.3, 20);
+    rightMaster.configOpenloopRamp(0.3, 20);
     // overrides default of 0.02 I think
     drive.setDeadband(0.04);
     // // set target # here
@@ -275,6 +277,7 @@ public class Robot extends TimedRobot {
     // button4 = driverJoystick.getRawButton(4);
     // go to preset spool position, 5
     button5 = driverJoystick.getRawButton(5);
+    button7 = driverJoystick.getRawButton(7);
 
     // now should stop motion & void last cmd on re-enable
     if (button3) { // [pos,indx,timeout]
@@ -293,6 +296,11 @@ public class Robot extends TimedRobot {
     if (button5) {
       leftMaster.set(ControlMode.Position, -targetRotation);
       rightMaster.set(ControlMode.Position, -targetRotation);
+    }
+
+    if (button7) {
+      leftMaster.set(ControlMode.Position, targetRotation);
+      rightMaster.set(ControlMode.Position, targetRotation);
     }
     // arm [device] control w/ stick or button, +/- PID could execute here
     // double armPower = -operatorJoystick.getRawAxis(1);
@@ -331,7 +339,7 @@ public class Robot extends TimedRobot {
     /* Save button state for on-press detection */
     // _lastButton3 = button3;
     // _lastButton4 = button4;
-    _lastButton5 = button5;
+   // _lastButton5 = button5;
 
   } // end teleopPeriodic
 

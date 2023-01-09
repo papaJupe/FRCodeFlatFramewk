@@ -1,32 +1,30 @@
 /**
  * CTREpositionCloseLoop-AMedit to test single motor rot. position
- * PID tuning, w/ talonSRX motor+gearbox; use in config arm angle, 
- * rotating spool to lift, climb ... all sorts of position things
+ * PID tuning, uses talonSRX motor+gearbox; could config arm angle, 
+ * rotating spool to lift, climb ... any mechanism needing position
+ * control of rotating wheel.
  */
 
 /**
  * Description:
  * PositionClosedLoop example demonstrates Position closed-loop servo.
- * 
- * current values for MS joystick, #3-8 button servo and Zaxis manual;
- * CIM+talonSRX+spool bench test has ~1550 tick/wheel rotation
- * PID gain # in Constants seem to work for light and heavy load.
  * Select the correct feedback sensor using configSelectedFeedbackSensor().
- * Use Percent Output Mode (w/ button 4 & Joystick) to confirm talon drives 
- * forward (Green LED on Talon/Victor) when the position sensor is moving
- * in the positive direction. If this is not the case, change the boolean 
- * input in setSensorPhase().
- * Controls:
- * Button #3 When pressed rezero position wherever it is
- * Button #4 When held, start and run Percent Output w/
- * left Joytick Z-Axis. Button 5,6,7,8 enable preset coded position
- * 	+ Position Closed Loop: Servo Talon +/- w/ button 5-8
- * 	+ Percent Ouput: throttle Talon forward and reverse
+ * Use Percent Output Mode (w/ button 4 & Joystick) to confirm talon going 
+ * forward (Green LED on Talon) when the position sensor is sending
+ * positive numbers. If not, change the boolean value in setSensorPhase().
  * 
- * Gains for Position Closed Loop could be adjusted in PIDset.java
- * if you can find it; other params from Constant hardcoded for clarity
- * all sim stuff commented out, lib deleted. PID param found in Phoe.
- * Tuner then added to Constants.j
+ * current values for MS joystick: #3-8 button for servo and Z axis for
+ * manual, also work w/ gamepad;
+ * CIM+talonSRX+spool bench setup has ~1550 tick/wheel rotation
+
+ * all PID param refined in Phoenix Tuner then added to Constants.j
+ * -- seem to work for light and heavy load.
+ *  
+ * Controls:
+ * Button #3 When pressed rezero position wherever it is and set target to 0;
+ * Button #4 When held, start and run Percent Output w/ Joytick Z-Axis. 
+ * Button 5,6,7,8 go to preset coded position on single press.
+ * 
  * Supported Version:
  * - Talon SRX: 4.00
  * - Victor SPX: 4.00
@@ -41,8 +39,6 @@ import edu.wpi.first.wpilibj.Joystick;
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.FeedbackDevice;
 import com.ctre.phoenix.motorcontrol.can.*;
-
-// import frc.robot.sim.PhysicsSim;
 
 public class Robot extends TimedRobot {
 
@@ -70,13 +66,6 @@ public class Robot extends TimedRobot {
 
 	/** Saves the current targeted position */
 	double targetPositionRotations;
-
-	// public void simulationInit() {
-	// PhysicsSim.getInstance().addTalonSRX(_talon, 0.75, 4000,
-	// Constants.kSensorPhase);
-	// }
-	// public void simulationPeriodic() {
-	// PhysicsSim.getInstance().run();
 
 	public void robotInit() {
 		/* Factory Default Talon */
@@ -138,17 +127,18 @@ public class Robot extends TimedRobot {
 	} // end robotInit
 
 	// This function is called periodically during operator control
+	// -- not clear why not put all its code into teleoPeriodic
 	public void teleopPeriodic() {
 		commonLoop();
 	}
 
 	void commonLoop() {
-		/* joystk input for manual control */
+		// joystk input for manual control, Z is rt. stick on gamepad
 		double leftZstick = _joystk.getZ();
 
 		// L-hornButton rezeros sensor
 		button3 = _joystk.getRawButton(3);
-		// r-hornButton --> enable joystick(z) 2 control motor
+		// r-hornButton --> enable joystick(z) to manually control motor
 		button4 = _joystk.getRawButton(4);
 		// go to preset spool position, 5 --> up N tick
 		button5 = _joystk.getRawButton(5);
@@ -157,7 +147,8 @@ public class Robot extends TimedRobot {
 		button6 = _joystk.getRawButton(6);
 		// go to preset spool position, 7 --> down N tick
 		boolean button7 = _joystk.getRawButton(7);
-		// button 8 --> drop to lowest, safe from top if not rezeroed
+		// button 8 --> drop to lowest, only 
+		safe from top if not rezeroed
 		button8 = _joystk.getRawButton(8);
 
 		/* Deadband stick output, overriding default in motor config */
@@ -183,7 +174,8 @@ public class Robot extends TimedRobot {
 		 * target position in native encoder rotations
 		 */
 
-		// now should stop motion & last pos cmd on re-enable
+		// one press should stop motion & void last pos cmd on re-enabling
+
 		if (button3) { // [pos,indx,timeout]
 			_talon.setSelectedSensorPosition(0, 0, 30);
 			targetPositionRotations = 0;
