@@ -1,14 +1,15 @@
-/* flatbotTimedRobot-v2-AMfinal */
-
-/* originally SunCode#2timedRobot, simple flat framework, edited 
-2211+ --> vers.1 = flatbotTRv1: single joystick, TalonSRX x4, 
+/* flatbotTimedRobot-v2-AMfinal flat framewk, all in Robot.j, 
+no Sub/Cmd; PID pos control in tele (w/ button) + auto, print 
+var 2 console w/ StringBuild */
+ 
+/* originally SunCode#2timedRobot, flat framework, edited 
+2211+ --> vers.1 = flatbotTimRobv1: single joystick, TalonSRX x4, 
 CA drive, auto from encoder distance, no PID, send encoder values 
-to console. 
-221225+, new v 2, add PID position of drive in Auto periodic, 
+to console. Has unused SmtDash code too.
+221225+, THIS = new v 2, add PID position to drive in autoPeriodic, 
 button pos.control of drive in teleop, straight drive fwd/bak.
 230103 --  OK to final, all this working.
-
-221229+ new v 3 add Auto option via chooser, sequential Cmd, rot.,
+221229+ LATER v 3 add Auto option via chooser, sequential Cmd, rot.,
 reverse path, ? need Cmd object to do sequential? keep flat format?
 send encoder+ values to smart dashboard
 */
@@ -20,14 +21,9 @@ import com.ctre.phoenix.motorcontrol.InvertType;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.can.*;
 
-// import edu.wpi.first.wpilibj.Compressor;
-// import edu.wpi.first.wpilibj.PneumaticsModuleType;
-// import edu.wpi.first.wpilibj.DoubleSolenoid;
-// import edu.wpi.first.wpilibj.DoubleSolenoid.Value;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
-// import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 
 /**
@@ -36,7 +32,7 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
  * documentation.
  */
 public class Robot extends TimedRobot {
-  // declare / instance hardware, I/O device, motor enabler class,
+  // declare class var 4 hardware, I/O device, motor enabler class,
   // unit conversion, constant
 
   // actuators
@@ -47,23 +43,21 @@ public class Robot extends TimedRobot {
   private WPI_TalonSRX rightSlave = new WPI_TalonSRX(2);
 
   // private WPIleftMasterSRX/ armMotor = new WPIleftMasterSRX(5);
-  // private WPIleftMasterSRX armSlave = new WPIleftMasterSRX(3);
-  // private WPIleftMasterSRX rollerMotor = new WPIleftMasterSRX(4);
-  // // private Compressor compressor = new Compressor(null);
+  // private Compressor compressor = new Compressor(null);
   // private DoubleSolenoid hatchIntake = new
   // DoubleSolenoid(PneumaticsModuleType.CTREPCM, 0, 1); // PCM port 0, 1
 
-  // drive mode class instanced using 2 motor instanced above
-  // -- gives you arcadeDrive() et al methods
+  // drive mode class using 2 motor instanced above
+  // -- gives you arcadeDrive() et al method
   private DifferentialDrive drive = new DifferentialDrive(leftMaster, rightMaster);
 
-  // joysticks
+  // joystick
   private Joystick driverJoystick = new Joystick(0);
   // private Joystick operatorJoystick = new Joystick(1);
 
   /** creates string to print data to console */
   StringBuilder _sb = new StringBuilder();
-  int _loops = 0; // refresh data every loop, print Q50 loop
+  int _loops = 0; // refresh data every loop, print Q60 loop
 
   /** Track button state for single press event */
   boolean button3;
@@ -73,25 +67,17 @@ public class Robot extends TimedRobot {
   boolean button7;
   boolean button8;
 
-  boolean _lastButton3 = false;
-  boolean _lastButton4 = false;
-  boolean _lastButton5 = false;
-  boolean _lastButton6 = false;
-  boolean _lastButton7 = false;
-  boolean _lastButton8 = false;
-
   // unit conversion for flatbot, 1 wheel rot, 18.7in = 10700 tick
-  // 4.5 ft = ~32000
   private final double kDriveFt2Tick = (10700 * 12) / (6 * Math.PI);
   // private final double kDriveTick2Feet = (6 * Math.PI / 12) / 10700;
   // private final double kArmTick2Deg = 360.0 / 512 * 26 / 42 * 18 /
   // 60 * 18 / 84;
 
-  // param for auto drive to position, used in autoPeri
+  // arbitrary test param for auto drive to position, used in autoPeri
   double targetDriveFt = 4.0;
   int targetRotation = (int) (targetDriveFt * kDriveFt2Tick);
 
-  // set here after tuning in PT
+  // set here after tuning in PhoeTune
   static final double kP = 0.3;
   static final double kI = 0.00015;
   static final double kD = 50.0;
@@ -99,9 +85,9 @@ public class Robot extends TimedRobot {
   static final double kIzone = 1200;
 
   @Override
-  public void robotInit() { // obj settings valid here, not before.
-    // CommandScheduler.getInstance().run();
-    // invert motor -- usually one or other drive should be false
+  public void robotInit() { // obj config works here, not before.
+    // CommandScheduler.getInstance().run();  not needed
+    // invert motor -- usually one side's drive will be false
     leftMaster.setInverted(true);
     rightMaster.setInverted(false);
     // armMotor.setInverted(false);
@@ -116,7 +102,7 @@ public class Robot extends TimedRobot {
     rightSlave.setInverted(InvertType.FollowMaster);
     // armSlave.setInverted(InvertType.FollowMaster);
 
-    // init remote encoder wired via these TalonSRX
+    // init remote encoder wired via TalonSRX x2
     leftMaster.configSelectedFeedbackSensor(FeedbackDevice.QuadEncoder,
         0, 20);
     rightMaster.configSelectedFeedbackSensor(FeedbackDevice.QuadEncoder,
@@ -124,18 +110,18 @@ public class Robot extends TimedRobot {
     // armMotor.configSelectedFeedbackSensor(FeedbackDevice.QuadEncoder,
     // 0, 20);
 
-    /*
-     * Sets phase of the sensor. Use when controller forward/reverse output
-     * doesn't correlate to appropriate forward/reverse reading of sensor.
-     * Pick a value so that positive PercentOutput yields a positive change in
-     * sensor. Should follow controller invert setting, so may not need?
-     * After setting this, user can freely call SetInverted() with any value.
-     */
+/*
+ * Sets phase of the sensor. Use when controller forward/reverse output
+ * doesn't correlate to appropriate forward/reverse reading of sensor.
+ * Pick a value so that positive PercentOutput yields a positive change in
+ * sensor. Should follow controller invert setting, so may not need ?
+ * After setting this, user can freely call SetInverted() with any value.
+ */
     leftMaster.setSensorPhase(true);
     rightMaster.setSensorPhase(true);
     // armMotor.setSensorPhase(true);
 
-    // reset encoders to zero [pos, index0-3, timeout ms.]
+    // reset encoders to zero [pos, PIDindex0-3, timeout ms.]
     leftMaster.setSelectedSensorPosition(0, 0, 20);
     rightMaster.setSelectedSensorPosition(0, 0, 20);
     // armMotor.setSelectedSensorPosition(0, 0, 20);
@@ -150,8 +136,8 @@ public class Robot extends TimedRobot {
 
     /*
      * Config peak and nominal (min) outputs, 1.0 means full 12v
-     * doubt all necessary to code, if defaults usable
-     */
+     * doubt all necessary to code, if defaults working;
+     */ nominal means minimum
     leftMaster.configNominalOutputForward(0, 20);
     rightMaster.configNominalOutputForward(0, 20);
 
@@ -187,6 +173,8 @@ public class Robot extends TimedRobot {
   @Override
   public void robotPeriodic() { // needs 2 be here -->
     CommandScheduler.getInstance().run();
+    // altho flat frame, no Subsys or Cmd, CS maybe needed by Periodics
+    
     // SmartDashboard.putNumber("Arm Encoder Value",//
     // armMotor.getSelectedSensorPosition() * kArmTick2Deg);
     // SmartDashboard.putNumber("LeftDriveDist (ft)",
@@ -194,7 +182,9 @@ public class Robot extends TimedRobot {
     // SmartDashboard.putNumber("RightDriveDist (ft)",
     // rightMaster.getSelectedSensorPosition() * kDriveTick2Feet);
 
-    /* fill array to print data to console */
+    /* fill array to print data to console, not sure needed here
+    *  since repeated in Periodics
+    */
     _sb.append("\tVout: ");
     /* x100 and cast to int to remove extra decimal value */
     _sb.append((int) (leftMaster.getMotorOutputPercent() * 100));
@@ -221,9 +211,10 @@ public class Robot extends TimedRobot {
 
   } // end autoInit
 
-  @Override // no defined auto Cmd, but there could be, and called here
+  @Override // no defined auto Cmd, but could be called here
   public void autonomousPeriodic() {
-
+    enableMotors(true); // set to Brake when idle
+    
     leftMaster.set(ControlMode.Position, targetRotation);
     rightMaster.set(ControlMode.Position, targetRotation);
 
@@ -247,7 +238,7 @@ public class Robot extends TimedRobot {
     }
     /* Empty string for fresh data next loop */
     _sb.setLength(0);
-    // needed ? -- no
+    // CS needed ? -- no
     // CommandScheduler.getInstance().run();
   } // end autoPeriod
 
@@ -259,7 +250,7 @@ public class Robot extends TimedRobot {
 
   @Override
   public void teleopPeriodic() {
-    // CommandScheduler.getInstance().run();
+    // CommandScheduler.getInstance().run(); not needed
     double power = -driverJoystick.getRawAxis(1); // rem: - sign
     double turn = driverJoystick.getRawAxis(0);
     // deadband set in DD class, this overrides
@@ -283,6 +274,7 @@ public class Robot extends TimedRobot {
     if (button3) { // [pos,indx,timeout]
       leftMaster.setSelectedSensorPosition(0, 0, 30);
       rightMaster.setSelectedSensorPosition(0, 0, 30);
+      // .set() maybe needed to clear last PID cmd
       int targZeroRota = 0;
       leftMaster.set(ControlMode.Position, targZeroRota);
       rightMaster.set(ControlMode.Position, targZeroRota);
@@ -291,7 +283,7 @@ public class Robot extends TimedRobot {
       _sb.append("u  "); // Native units
     }
 
-    // ctre exampl: only wanted 1 press activ., used !_lastB && butt5
+    // ctre exampl: only wanted 1 press 2 activ., used !_lastB && butt5
     // this needs constant press to drive it to target
     if (button5) {
       leftMaster.set(ControlMode.Position, -targetRotation);
@@ -311,36 +303,24 @@ public class Robot extends TimedRobot {
     // armPower *= 0.5;
     // armMotor.set(ControlMode.PercentOutput, armPower);
 
-    // roller control
-    // double rollerPower = 0;
-    // if (operatorJoystick.getRawButton(1) == true) {
-    // rollerPower = 1;
-    // } else if (operatorJoystick.getRawButton(2)) {
-    // rollerPower = -1;
-    // }
-    // rollerMotor.set(ControlMode.PercentOutput, rollerPower);
-
     // // hatch intake
     // if (operatorJoystick.getRawButton(3)) {// open
     // hatchIntake.set(Value.kReverse);
     // } else {
     // hatchIntake.set(Value.kForward);
     // }
-    /**
-     * Print every N loops, printing too much too fast is bad
-     * for performance.
-     */
-    if (++_loops >= 60) {
+    // Print every N loops
+        if (++_loops >= 60) {
       _loops = 0;
       System.out.println(_sb.toString());
     }
     /* Empty string gets fresh data next loop */
     _sb.setLength(0);
 
-    /* Save button state for on-press detection */
+    /* Save button state for on-press detection, single activation */
     // _lastButton3 = button3;
     // _lastButton4 = button4;
-    _lastButton5 = button5;
+    // _lastButton5 = button5;
 
   } // end teleopPeriodic
 
@@ -348,7 +328,6 @@ public class Robot extends TimedRobot {
   public void disabledInit() { // safety step, cancel residual motion cmd
     leftMaster.set(ControlMode.PercentOutput, 0);
     rightMaster.set(ControlMode.Position, 0);
-
     enableMotors(true); // keep in brake mode to hold pos.
   }
 
@@ -368,11 +347,4 @@ public class Robot extends TimedRobot {
     // rollerMotor.setNeutralMode(mode);
   } // end enableMotor
 
-  @Override
-  public void testInit() {
-  }
-
-  @Override
-  public void testPeriodic() {
-  }
 } // end Robot.j

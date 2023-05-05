@@ -138,7 +138,7 @@ public class Robot extends TimedRobot {
 
 		// L-hornButton rezeros sensor
 		button3 = _joystk.getRawButton(3);
-		// r-hornButton --> enable joystick(z) to manually control motor
+		// R-hornButton --> enable joystick(z) to manually control motor
 		button4 = _joystk.getRawButton(4);
 		// go to preset spool position, 5 --> up N tick
 		button5 = _joystk.getRawButton(5);
@@ -147,8 +147,7 @@ public class Robot extends TimedRobot {
 		button6 = _joystk.getRawButton(6);
 		// go to preset spool position, 7 --> down N tick
 		boolean button7 = _joystk.getRawButton(7);
-		// button 8 --> drop to lowest, only 
-		safe from top if not rezeroed
+		// button 8 --> drop to lowest, only safe from top if not rezeroed
 		button8 = _joystk.getRawButton(8);
 
 		/* Deadband stick output, overriding default in motor config */
@@ -196,10 +195,10 @@ public class Robot extends TimedRobot {
 			_talon.set(ControlMode.PercentOutput, leftZstick * 0.2);
 		}
 		// only want 1 activation / press for next 4 button
-		//* rezero wasn't helpful for button positioning
+		// * rezero wasn't helpful for button positioning
 		// if() condx only true on new button press @start or after
 		// release; not clear how/why it runs to complete .set cmd
-	
+
 		if (!_lastButton5 && button5) {
 			double now = (_talon.getSelectedSensorPosition());
 			targetPositionRotations = now + 1500;
@@ -260,15 +259,15 @@ public class Robot extends TimedRobot {
 
 	// @Override // used to debug problem; not normally needed
 	// public void disabledInit() {
-	// 	_talon.setSelectedSensorPosition(0);
-	// 	targetPositionRotations = 0;
-	// 	_talon.set(ControlMode.Position, targetPositionRotations);
-	// 	button5 = false;
-	// 	button6 = false;
-	// 	button7 = false;
-	// 	button8 = false;
+	// _talon.setSelectedSensorPosition(0);
+	// targetPositionRotations = 0;
+	// _talon.set(ControlMode.Position, targetPositionRotations);
+	// button5 = false;
+	// button6 = false;
+	// button7 = false;
+	// button8 = false;
 
-	// 	_loops = 0;
+	// _loops = 0;
 	// }
 
 	// @Override // print pos setting button value

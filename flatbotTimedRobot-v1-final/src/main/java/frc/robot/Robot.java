@@ -5,9 +5,9 @@
 
 /* originally SunCode#2timedRobot, simple flat framework, edited 2211+ for 
 flatbot, single joystick, TalonSRX x4, CA drive, auto from encoder distance, 
-no PID, send encoder values to smart dashboard, done -- check all param
- polarity, inversion, phoen tuner check tick-drive conversion; next v2
- version, add PID to auto cmd, button control of drive et al, device rot.? */
+no PID, send encoder values to smart dashboard, auto dist. set in autoPeriod.
+next V2 version add PID to auto, button control drive pos.
+*/
 
 package frc.robot;
 
@@ -21,6 +21,7 @@ import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 //import edu.wpi.first.wpilibj.DoubleSolenoid;
 //import edu.wpi.first.wpilibj.DoubleSolenoid.Value;
 import edu.wpi.first.wpilibj.Joystick;
+
 // import edu.wpi.first.wpilibj.PneumaticsModuleType;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
@@ -44,10 +45,9 @@ public class Robot extends TimedRobot {
 
   // private WPI_TalonSRX/ armMotor = new WPI_TalonSRX(5);
   // private WPI_TalonSRX armSlave = new WPI_TalonSRX(3);
-
   // private WPI_TalonSRX rollerMotor = new WPI_TalonSRX(4);
 
-  // // private Compressor compressor = new Compressor(null);
+   // // private Compressor compressor = new Compressor(null);
   // private DoubleSolenoid hatchIntake = new
   // DoubleSolenoid(PneumaticsModuleType.CTREPCM, 0, 1); // PCM port 0, 1
 
@@ -93,7 +93,7 @@ public class Robot extends TimedRobot {
      * Sets phase of the sensor. Use when controller forward/reverse output
      * doesn't correlate to appropriate forward/reverse reading of sensor.
      * Pick a value so that positive PercentOutput yields a positive change in
-     * sensor. Should follow controller invert setting, so may not need?
+     * sensor. Should follow controller invert setting, so may not need
      * After setting this, user can freely call SetInverted() with any value.
      */
     leftMaster.setSensorPhase(false);
@@ -121,7 +121,7 @@ public class Robot extends TimedRobot {
   } // end robotInit
 
   @Override
-  public void robotPeriodic() {
+  public void robotPeriodic() { no Cmds that would need .sched here
     // SmartDashboard.putNumber("Arm Encoder Value",//
     // armMotor.getSelectedSensorPosition() * kArmTick2Deg);
 
@@ -131,7 +131,7 @@ public class Robot extends TimedRobot {
         rightMaster.getSelectedSensorPosition() * kDriveTick2Feet);
   } // end robotPeriodic
 
-  @Override 
+  @Override
   public void autonomousInit() {
     enableMotors(true); // sets all to neutral Brake
     // reset encoders to zero [index0-3, loop 0-1, timeout]
@@ -140,7 +140,7 @@ public class Robot extends TimedRobot {
     // armMotor.setSelectedSensorPosition(0, 0, 10);
   } // end autoInit
 
-  @Override // no defined auto cmd, but there could be, and called here
+  @Override // no defined auto Cmd, low level ops need looping of aP
   public void autonomousPeriodic() {
     double leftPosition = leftMaster.getSelectedSensorPosition() * kDriveTick2Feet;
     double rightPosition = rightMaster.getSelectedSensorPosition() * kDriveTick2Feet;
@@ -218,11 +218,4 @@ public class Robot extends TimedRobot {
     // rollerMotor.setNeutralMode(mode);
   } // end enableMotor
 
-  @Override
-  public void testInit() {
-  }
-
-  @Override
-  public void testPeriodic() {
-  }
 } // end Robot.j
