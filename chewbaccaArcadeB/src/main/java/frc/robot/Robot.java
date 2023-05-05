@@ -1,4 +1,4 @@
-// chewbaccaArcadeA : arcade drive w/ 4 Neo on CA drive, flat framework
+// chewbaccaArcadeA : arcade drive w/ 4 Neo on CA drive, flat framework,
 //  drives only, no Auto, edited AM 221204 from REV example Motor_Follow
 
 // Copyright (c) FIRST and other WPILib contributors.
@@ -15,7 +15,7 @@ import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
 /**
- * .. shows the use of the DifferentialDrive class. Runs the
+ * ...shows the use of the DifferentialDrive class. Runs the
  * motors with split arcade steering and Xbox controller.
  */
 public class Robot extends TimedRobot {
