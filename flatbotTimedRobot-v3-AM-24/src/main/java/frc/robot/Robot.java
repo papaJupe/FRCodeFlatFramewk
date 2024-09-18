@@ -1,4 +1,4 @@
-/* flatbotTimedRobot-v3-AMedit */
+/* flatbotTimedRobot-v3-AM-24 */
 
 /* originally SunCode#2timedRobot, simple flat framework, edited 
 2211+ --> new vers. flatbotTRv1: single joystick, TalonSRX x4, 
@@ -9,9 +9,15 @@ pos.control of drive in teleop, straight drive fwd/bak.
 
 240731 post motor burn, testing function, tuning up flat format, same
 single auto straight run in autoPeriod, need PID tuning for smooth move
-Coding in '23 VSC for '23 img, but need '24 DS to run, no COM in '23 DS
+240831 import to '24 VSC, needs '24 DS and RIO image, phenx 5+6 to run
 
+in teleOp R side appears to go farther on straight driving than L by encod
+ticks, also L < R ticks on turns. But manual wheel turn x10 reads 
+almost equal (15.2 L vs 15.6 R ). In auto both sides go ~ 4 ft, end simul-
+taneously. Is L motor pair weaker than R? How does it perform on ground?
 */
+
+
 package frc.robot;
 
 import com.ctre.phoenix.motorcontrol.ControlMode;
@@ -36,7 +42,8 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
  * documentation.
  */
 public class Robot extends TimedRobot {
-  // declare / instance hardware, I/O device, motor enabler class,
+  // declare & define class field members; no config possible here
+  // instance hardware, I/O device, motor enabler class,
   // unit conversion, constant
 
   // actuators
@@ -61,12 +68,12 @@ public class Robot extends TimedRobot {
   private Joystick driverJoystick = new Joystick(0);
   // private Joystick operatorJoystick = new Joystick(1);
 
-  /** creates string to print data to console */
+  /** creates string array to print data to console */
   StringBuilder _sb = new StringBuilder();
   int _loops = 0; // refresh data every loop, print Q 60 loop
 
   /** Track button state for single press event */
-  boolean button1; // A on gamepad, rezero's encoders
+  boolean button1; // A on gamepad, rezero encoders
   // boolean button4;
   // boolean button5;
   // boolean button6;
@@ -81,14 +88,16 @@ public class Robot extends TimedRobot {
   // boolean _lastButton8 = false;
 
 
-  // unit conversion for flatbot,
-  // wheel diam. = 0.5 ft, 1 wheel rot= 1.571 ft = 10720 tick
-  // E4T encod. supposed to be 360 cpr, but we measured
-  // ~1340. With gear ratio 8:1 this makes 1 wheel rot. = 10720 tick
-  //
+  // unit conversion for flatbot encoder:
+  // wheel diam. = 0.5 ft, 1 wheel rot= 1.571 ft; counting wheel rot x10
+  // and phoenix count of ticks, we calc. 1 wheel rot = 10700 tick.
+  // since gear ratio 8:1 (also encod ratio?), 1 encod. rot. = 1338 tick.
+  // E4T cpr is supposed to be 360, but SRX reads all 4 transitions (?true)
+  // so ideally counts 1440 cpr. Our reading 1338 could indicate slightly 
+  // damaged rotor or other problem
   
-  private final double kDriveFt2Tick = 10720 / (0.5 * Math.PI); //6824
-  private final double kDriveTick2Feet = (0.5 * Math.PI) / 10720;
+  private final double kDriveFt2Tick = 10700 / (0.5 * Math.PI); // = 6811 ct./ ft
+  private final double kDriveTick2Feet = (0.5 * Math.PI) / 10700;
   // private final double kArmTick2Deg = 360.0 / 512 * 26 / 42 * 18 
 
     // param for auto drive to position, set here so roboPerio has non-
@@ -96,7 +105,7 @@ public class Robot extends TimedRobot {
     double targetDriveFt = 4.0;
     int targetTick = (int) (targetDriveFt * kDriveFt2Tick);
 
-  // set here after tuning in PhoeTune
+  // set here after tuning in PhenxTuner
   static final double kP = 0.15; // would smaller make gentler start? Y
   static final double kI = 0.00015;
   static final double kD = 100.0;  // made gradual motion end smoother
@@ -104,8 +113,8 @@ public class Robot extends TimedRobot {
   static final double kIzone = 1200;
 
   @Override
-  public void robotInit() { // obj settings valid here, not before.
-    // invert motor -- usually one or other drive should be false
+  public void robotInit() { // obj param settings valid here, not before.
+    // invert motor -- usually R or L drive should be false
     leftMaster.setInverted(true);
     rightMaster.setInverted(false);
     // armMotor.setInverted(false);
@@ -174,13 +183,14 @@ public class Robot extends TimedRobot {
     leftMaster.configOpenloopRamp(1.0, 20);
     rightMaster.configOpenloopRamp(1.0, 20);
 
+    // try for less jerky auto start
+    leftMaster.configClosedloopRamp(1.0);
+    rightMaster.configClosedloopRamp(1.0);
+    
     // Closed-Loop output will be neutral within this range
     leftMaster.configAllowableClosedloopError(0, 50, 20);
     rightMaster.configAllowableClosedloopError(0, 50, 20);
 
-    // try for less jerky auto start
-    leftMaster.configClosedloopRamp(1.0);
-    rightMaster.configClosedloopRamp(1.0);
 
     // Configs Position Closed Loop gains from above in slot0; typically kF
     // stays zero. (int slot, double k_value, int timeout)
@@ -202,10 +212,11 @@ public class Robot extends TimedRobot {
   } // end robotInit
 
   @Override
-  public void robotPeriodic() { // needs 2 be here -->
+  public void robotPeriodic() { // needs 2 .run altho we don't have any Cmd or
+  // Subsys objects here. Could be needed to run Periodic method themselves?
     CommandScheduler.getInstance().run();
 
-      // L-horn Button / pad's A  rezeros sensor
+      // L-horn Button / game pad's A  rezeros sensor
       button1 = driverJoystick.getRawButton(1);
    
       // should stop motion & void last cmd on re-enable
@@ -269,7 +280,7 @@ public class Robot extends TimedRobot {
 
   @Override
   public void teleopInit() {
-    enableMotorBrake(false); // sets to coast
+    enableMotorBrake(false); // sets all to coast
   }
 
   @Override
@@ -289,7 +300,7 @@ public class Robot extends TimedRobot {
     drive.arcadeDrive(power * 0.5, -turn * 0.5);
 
     // L-hornButton / pad's A  rezeros sensor
-    //button1 = driverJoystick.getRawButton(1);
+    // button1 = driverJoystick.getRawButton(1);
     // r-hornButton --> enable joystick(z) 2 control motor
     // button4 = driverJoystick.getRawButton(4);
     // go to preset spool position, 5
@@ -342,7 +353,6 @@ public class Robot extends TimedRobot {
     // } else {
     // hatchIntake.set(Value.kForward);
     // }
-
 
     /* Save button state for on-press detection */
     // _lastButton3 = button3;

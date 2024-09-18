@@ -67,7 +67,7 @@ public class Robot extends TimedRobot {
   boolean button7;
   boolean button8;
 
-  // unit conversion for flatbot, 1 wheel rot, 18.7in = 10700 tick
+  // unit conversion, 1 wheel rot, 18.7in = 10700 tick (measured)
   private final double kDriveFt2Tick = (10700 * 12) / (6 * Math.PI);
   // private final double kDriveTick2Feet = (6 * Math.PI / 12) / 10700;
   // private final double kArmTick2Deg = 360.0 / 512 * 26 / 42 * 18 /
